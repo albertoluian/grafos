@@ -1,6 +1,7 @@
 import numpy as np
 from queue import Queue
 import copy
+from fibheap import *
 tempo = 0
 changes = 0
 class ListaAdj():
@@ -22,6 +23,13 @@ class ListaAdj():
         for i in range(self.lista[v].__len__()):
             vizinhos.append(self.lista[v][i][0])
         return vizinhos
+    def vizneg(self, v):
+        viz = []
+        for i in self.lista.keys():
+            for j in self.lista[i]:
+                if(j[0] == v):
+                    viz.append(i)
+        return viz
     def bfs(self, v):
         lista2 = {}
         for i in self.lista.keys():
@@ -131,36 +139,37 @@ class ListaAdj():
                                     return caminho
     def dijkstra(self, v):
         lista2 = {}
-        q = []
+        q = Fheap()
+        V = np.zeros((self.tam), dtype=Node)
         count = 0
         flag = True
-        for i in self.lista.keys():
+        for i in range(self.tam):
             if(flag):
                 if(i == v):
                     flag = False
                 else:
                     count+=1
-            lista2.update({i:[None,float('inf')]}) #pi, d
-            q.append((i, float('inf')))
+            lista2.update({i+1:[None,float('inf')]}) #pi, d
+            V[i] = q.insert(Node(key=float('inf'), value=i+1))
         lista2[v][1] = 0 # d <- 0
-        aux = q[0][0]
-        q[0] = (q[count][0], 0)
-        q[count] = (aux, float('inf'))
-        s = set()
+        q.decrease_key(V[v-1], 0)
+        for i in self.lista.keys():
+            for viz in self.lista[i]:
+                V[i-1].addViz(V[viz[0]-1])
+        s = []
         count = 0
-        while(q !=[]):
-            u = q.pop(0)
-            s.add(u[0])
+        while(q.num_nodes !=0):
+            u = q.extract_min()
+            s.append(u)
             if(s.__len__()%10000 == 0):
                 print(s.__len__())
-            for ve in self.lista[u[0]]:
-                relaxou = self.relaxa(u[0], ve, lista2)
+            count = 0
+            for ve in self.lista[u.value]:
+                no = u.viz()[count]
+                count+=1
+                relaxou = self.relaxa(u.value, ve, lista2)
                 if(relaxou):
-                    for i in range(len(q)):
-                        if(q[i][0] == ve[0]):
-                            q[i] = (ve[0], lista2[ve[0]][1])
-                    q.sort(key=lambda tup: tup[1])
-        print(count)
+                    q.decrease_key(no, lista2[ve[0]][1])
         pi = {}
         d = {}
         for i in self.lista.keys():
@@ -168,43 +177,15 @@ class ListaAdj():
             d.update({i:lista2[i][1]})
         return pi, d
 
-        
-        
-class MatrizAdj():
-    """Lista de adjacências feita através de um 
-       dicionário, onde 'tam' é a qtde de vértices
-       do grafo e type o seu tipo (arestas - 0, arcos - 1)"""
-    def __init__(self, tam, type):
-        self.matriz = np.full((tam, tam), None)
-        self.type = type
-        self.tam = tam
-        # for i in range(tam):
-        #     self.lista.update({i+1:[]})
-    def addAresta(self, v1, v2, w):
-        self.matriz[v1][v2] = w
-        if(not self.type):
-           self.matriz[v2][v1] = w 
-    def viz(self, v):
-        vizinhos = []
-        for i in range(self.tam):
-            if(self.matriz[v][i]):
-                vizinhos.append(self.matriz[v][i])
-        return vizinhos
-
-class Graph():
-    '''Classe do grafo, recebe um arquivo e
-       uma forma de representação (0 para
-       matriz de adjacências e 1 para lista
-       de adjacências)''' 
-    def __init__(self, filePath=str, representacao=0):
-        self.tipoRepresentacao = representacao
+class DiGraph():
+    '''Classe do grafo direcionado, recebe um arquivo''' 
+    def __init__(self, filePath=str):
         self.type = 0
         self.n = 0
         self.m = 0
         file = open(filePath)
         count = 0
-        if(self.tipoRepresentacao):
-            while True:
+        while True:
                 count += 1
                 line = file.readline()
                 if not line:
@@ -215,68 +196,84 @@ class Graph():
                 elif (line[0] == 'p'):
                     self.n = int(line[2])
                     self.m = int(line[3])
-                    self.lista = ListaAdj(self.n, 1) #trocar p/ 0 depois
-        else:
-            while True:
-                count += 1
-                line = file.readline()
-                if not line:
-                    break
-                line = line.split(" ")
-                if(line[0] =='a'):
-                    self.lista.addAresta(int(line[1]), int(line[2]), int(line[3]))
-                elif (line[0] == 'p'):
-                    self.n = int(line[2])
-                    self.m = int(line[3])
-                    self.matriz = MatrizAdj(self.n, 1) #trocar p/ 0 depois
-
+                    self.lista = ListaAdj(self.n, 1) 
         file.close()
     def viz(self, v):
-        if(self.tipoRepresentacao):
             return self.lista.viz(v)
-        else:
-            return self.matriz.viz(v)
     def d(self, v):
-        if(self.tipoRepresentacao):
-            return len(self.lista.viz(v))
-        else:
-            return len(self.matriz.viz(v))
+            return len(self.lista.viz(v)) #positivo
+    def dneg(self, v):
+            return len(self.lista.vizneg(v)) #negativa
     def mind(self):
         minimoD = (1, self.n)
-        for i in range(self.n):
-            d = self.d(i+1)
+        for i in self.lista.lista.keys():
+            dpos = self.d(i)
+            if(dpos<minimoD[1]):
+                minimoD = (i, dpos)
+        return minimoD[1] #minimo grau positivo e negativo
+    def maxd(self):
+        maximoD = (1, 0)
+        for i in self.lista.lista.keys():
+            dpos = self.d(i)
+            if(dpos>maximoD[1]):
+                maximoD = (i, dpos)
+        return maximoD[1]
+    def bfs(self, v):
+            return self.lista.bfs(v)
+    def dfs(self, v):
+            return self.lista.iniciadfs(v)
+    def bf(self, v):
+            return self.lista.bf(v)
+    def detectaCiclo(self, tam):
+            return self.lista.detectaCiclo(tam)
+    def djikstra(self, v):
+            return self.lista.dijkstra(v)
+class Graph():
+    '''Classe do grafo, recebe um arquivo''' 
+    def __init__(self, filePath=str):
+        self.type = 0
+        self.n = 0
+        self.m = 0
+        file = open(filePath)
+        count = 0
+        while True:
+                count += 1
+                line = file.readline()
+                if not line:
+                    break
+                line = line.split(" ")
+                if(line[0] =='e'): #edge
+                    self.lista.addAresta(int(line[1]), int(line[2]), int(line[3]))
+                elif (line[0] == 'p'):
+                    self.n = int(line[2])
+                    self.m = int(line[3])
+                    self.lista = ListaAdj(self.n, 0) 
+        file.close()
+    def viz(self, v):
+            return self.lista.viz(v)
+    def d(self, v):
+            return len(self.lista.viz(v))
+    def mind(self):
+        minimoD = (1, self.n)
+        for i in self.lista.lista.keys():
+            d = self.d(i)
             if(d<minimoD[1]):
-                minimoD = (i+1, d)
+                minimoD = (i, d)
         return minimoD[1]
     def maxd(self):
         maximoD = (1, 0)
-        for i in range(self.n):
-            d = self.d(i+1)
+        for i in self.lista.lista.keys():
+            d = self.d(i)
             if(d>maximoD[1]):
-                maximoD = (i+1, d)
+                maximoD = (i, d)
         return maximoD[1]
     def bfs(self, v):
-        if(self.tipoRepresentacao):
             return self.lista.bfs(v)
-        else:
-            return self.matriz.bfs(v)
     def dfs(self, v):
-        if(self.tipoRepresentacao):
             return self.lista.iniciadfs(v)
-        else:
-            return self.matriz.dfs(v)
     def bf(self, v):
-        if(self.tipoRepresentacao):
             return self.lista.bf(v)
-        else:
-            return self.matriz.dfs(v)
     def detectaCiclo(self, tam):
-        if(self.tipoRepresentacao):
             return self.lista.detectaCiclo(tam)
-        else:
-            return self.matriz.detectaCiclo(tam)
     def djikstra(self, v):
-        if(self.tipoRepresentacao):
             return self.lista.dijkstra(v)
-        else:
-            return self.matriz.detectaCiclo(v)

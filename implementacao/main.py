@@ -1,8 +1,8 @@
 from Graph import *
 import sys
-a = Graph("C:\\Users\\LUIAN\Desktop\\Teoria dos Grafos\\implementacao\\USA-road-d.NY.gr", 1)
+a = DiGraph("C:\\Users\\LUIAN\Desktop\\Teoria dos Grafos\\implementacao\\USA-road-d.NY.gr")
 # item a)
-# print(a.mind()) # 1
+print(a.mind()) # 1
 # item b)
 # print(a.maxd()) # 8
 # item c) caminho com 10 ou mais arestas
@@ -26,11 +26,11 @@ sys.setrecursionlimit(100000)
 # [452, 453, 477, 448, 449, 451, 457]
 # (452, 453) -> (453, 477) -> (477, 448) -> (488, 449) -> (449, 451) -> (451, 457) -> (457, 452)
 #item e)
-pi, d = a.djikstra(129)
-max = 0
-index = 0
-for i in d.keys():
-    if(d[i]> max):
-        max = d[i]
-        index = i
-print( max, index) # --> 1437303 90644
+# pi, d = a.djikstra(129)
+# max = 0
+# index = 0
+# for i in d.keys():
+#     if(d[i]> max):
+#         max = d[i]
+#         index = i
+# print( max, index) # --> 1437303 90644
