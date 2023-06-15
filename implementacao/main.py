@@ -1,6 +1,7 @@
 from Graph import *
 import sys
 a = DiGraph("C:\\Users\\LUIAN\Desktop\\Teoria dos Grafos\\implementacao\\USA-road-d.NY.gr")
+# a = Graph("C:\\Users\\LUIAN\Desktop\\Teoria dos Grafos\\implementacao\\teste.txt")
 # item a)
 print(a.mind()) # 1
 # item b)
@@ -18,8 +19,8 @@ print(a.mind()) # 1
 # 120
 # 123
 # 125
-sys.setrecursionlimit(100000)
-# pi, vini, vfim, fpi = a.dfs(1)
+sys.setrecursionlimit(100000) #é necessário setar um novo limite de recursão, pois o S.O bloqueia a alta recursividade do dfs
+# pi, vini, vfim, fpi = a.dfs(129)
 # caminho = a.detectaCiclo(5)
 # print(caminho)
 #item d)
